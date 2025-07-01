@@ -1,0 +1,38 @@
+name: Build windows_exporter
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Install promu
+        run: |
+          Invoke-WebRequest -Uri https://github.com/prometheus/promu/releases/download/v0.15.0/promu-0.15.0.windows-amd64.zip -OutFile promu.zip
+          Expand-Archive promu.zip -DestinationPath .
+          Move-Item promu-0.15.0.windows-amd64\promu.exe .
+          $env:Path += ";$PWD"
+        shell: pwsh
+
+      - name: Build windows_exporter
+        run: make build
+        shell: pwsh
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows_exporter.exe
+          path: windows_exporter.exe
